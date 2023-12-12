@@ -1,8 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import './styles.css'
-
-const tiles = [1, 2, 3, 4]
+import GameBoard from './GameBoard';
 
 export default function App() {
   return (
@@ -10,12 +9,7 @@ export default function App() {
       <View style={main_style.container}>
         <Text>Open up App.tsx to start working on your app!</Text>
         <StatusBar style="auto" />
-        <div className='board_grid'>
-          {tiles.map((tile) => (
-            <button
-              key={tile}>{tile}</button>
-          ))}
-        </div>
+        <GameBoard />
       </View>
     </>
   );
