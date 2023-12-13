@@ -14,18 +14,13 @@
 
 .cell:disabled {
   opacity: 1;
-  color: #000;
+  color: black;
 }
 
 
 
 .cell_error {
-  background-color: #ff0000;
-}
-
-.cell:disabled .cell_error {
-  background-color: #ff0000;
-  color: #fff;
+  background-color: red;
 }
 
 /* TODO:

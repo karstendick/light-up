@@ -3,6 +3,7 @@ import { Draft } from "immer";
 import  { Text } from "react-native";
 import "./styles.css";
 
+// TODO: Handled different sized puzzles
 const nrows = 7;
 const ncols = 7;
 
@@ -14,14 +15,6 @@ function rctoi(r: number, c: number): number {
   return r * ncols + c;
 }
 
-// States
-// empty/white/unknown
-// shaded/black
-// shaded: 0, 1, 2, 3, 4
-// Xed: red X on white
-// lightbulb
-// lit up/yellow
-// lit up Xed: red X on yellow
 enum CellState {
   Empty, // 0
   Shaded, // 1
@@ -207,11 +200,6 @@ export default function GameBoard() {
     }
   }
 
-  // TODO: Check for win condition:
-  // - All cells are lit
-  // - No errors
-  // - All numbered cells have exactly that many lightbulbs adjacent to it
-
   const handleClick = (clickedCell: Cell) => {
     setCells((draftCells: Draft<Cell[]>) => {
       let newState = clickedCell.state
@@ -265,7 +253,6 @@ export default function GameBoard() {
 
   }
 
-  // TODO: Disable a button if the cell is shaded
   return (
     <>
       <div className='board_grid'>
