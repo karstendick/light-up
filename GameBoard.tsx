@@ -195,6 +195,7 @@ export default function GameBoard() {
       <div className='board_grid'>
         {cells.map((cell) => (
           <button
+            className={cell.isError ? "cell_error" : ""}
             onClick={() => handleClick(cell)}
             key={cell.id}>{cellStateToContent[cell.state]}</button>
         ))}
