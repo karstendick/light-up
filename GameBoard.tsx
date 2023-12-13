@@ -1,5 +1,6 @@
 import { useImmer } from "use-immer";
 import { Draft } from "immer";
+import  { Text } from "react-native";
 import "./styles.css";
 
 const nrows = 7;
@@ -153,22 +154,58 @@ function getAdjacentCells(cells: Cell[], cell: Cell): Cell[] {
   return adjacentCells
 }
 
+// Returns the difference between the number of adjacent lightbulbs and the number of required adjacent lightbulbs
+// 0 means the correct number of lightbulbs are adjacent
+// >0 means there are too many lightbulbs adjacent, which is an error
+// <0 means there are too few lightbulbs adjacent, so continue playing
+function getNumAdjacentLightbulbsDiff(cells: Cell[], cell: Cell): number {
+  const adjacentCells = getAdjacentCells(cells, cell)
+  const numAdjacentLightbulbs = adjacentCells.filter(cell => cell.state === CellState.Lightbulb).length
+  // A little hacky, but this'll work so long as we keep the shaded number states in order
+  const numRequiredAdjacentLightbulbs = cell.state - CellState.Shaded0
+  return numAdjacentLightbulbs - numRequiredAdjacentLightbulbs
+}
+
 function cellIsError(cells: Cell[], cell: Cell): boolean {
   if (![CellState.Shaded0, CellState.Shaded1, CellState.Shaded2, CellState.Shaded3, CellState.Shaded4].includes(cell.state)) {
     return false
   }
-  const adjacentCells = getAdjacentCells(cells, cell)
-  const numAdjacentLightbulbs = adjacentCells.filter(cell => cell.state === CellState.Lightbulb).length
-  const numRequiredAdjacentLightbulbs = cell.state - CellState.Shaded0
-  return numAdjacentLightbulbs > numRequiredAdjacentLightbulbs
+  const numAdjacentLightbulbsDiff = getNumAdjacentLightbulbsDiff(cells, cell)
+  return numAdjacentLightbulbsDiff > 0
 }
+
+function checkIsGameWon(cells: Cell[]): boolean {
+  // Check that all cells are lit
+  const disallowedStates = [CellState.Empty, CellState.Xed]
+  const cellsWithDisallowedStates = cells.filter(cell => disallowedStates.includes(cell.state))
+  if (cellsWithDisallowedStates.length > 0) {
+    return false
+  }
+  // Check that all numbered cells have exactly that many lightbulbs adjacent to it
+  const numberedCells = cells.filter(cell => [CellState.Shaded0, CellState.Shaded1, CellState.Shaded2, CellState.Shaded3, CellState.Shaded4].includes(cell.state))
+  const numAdjacentLightbulbsDiffs = numberedCells.map(cell => getNumAdjacentLightbulbsDiff(cells, cell))
+  if (numAdjacentLightbulbsDiffs.some(diff => diff !== 0)) {
+    return false
+  }
+
+  return true
+}
+
+
 
 export default function GameBoard() {
   const [cells, setCells] = useImmer(parsePuzzle(puzzle1))
+  const [isGameWon, setIsGameWon] = useImmer(false)
 
-  // TODO: Check for errors:
-  // - A lightbulb can't shine on another lightbulb
-  // - A numbered cell must have exactly that many lightbulbs adjacent to it (but only show error on exceeding that number)
+  function cellIsClickable(cell: Cell): boolean {
+    if (isGameWon) {
+      return false
+    } else if ([CellState.Shaded, CellState.Shaded0, CellState.Shaded1, CellState.Shaded2, CellState.Shaded3, CellState.Shaded4].includes(cell.state)) {
+      return false
+    } else {
+      return true
+    }
+  }
 
   // TODO: Check for win condition:
   // - All cells are lit
@@ -221,6 +258,9 @@ export default function GameBoard() {
       draftCells.forEach(cell => {
         draftCells[cell.id].isError = cellIsError(draftCells, cell)
       })
+
+      // Check for win condition
+      setIsGameWon(checkIsGameWon(draftCells))
     })
 
   }
@@ -231,11 +271,13 @@ export default function GameBoard() {
       <div className='board_grid'>
         {cells.map((cell) => (
           <button
-            className={cell.isError ? "cell_error" : ""}
+            disabled={!cellIsClickable(cell)}
+            className={"cell " + (cell.isError ? "cell_error" : "")}
             onClick={() => handleClick(cell)}
             key={cell.id}>{cellStateToContent[cell.state]}</button>
         ))}
       </div>
+      {isGameWon && <Text>You won!</Text>}
     </>
   )
 }

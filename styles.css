@@ -5,8 +5,27 @@
   grid-template-rows: repeat(7, 1fr);
 }
 
+.cell {
+  border: 1px solid black;
+  text-align: center;
+  font-size: 2em;
+  padding: 0.5em;
+}
+
+.cell:disabled {
+  opacity: 1;
+  color: #000;
+}
+
+
+
 .cell_error {
   background-color: #ff0000;
+}
+
+.cell:disabled .cell_error {
+  background-color: #ff0000;
+  color: #fff;
 }
 
 /* TODO:
