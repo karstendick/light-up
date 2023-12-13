@@ -131,6 +131,38 @@ function shineLight(cells: Cell[], lightbulbCell: Cell): Cell[] {
   return litCells
 }
 
+function getAdjacentCells(cells: Cell[], cell: Cell): Cell[] {
+  const [r, c] = itorc(cell.id)
+  const adjacentCells = []
+  // go up
+  if (r > 0) {
+    adjacentCells.push(cells[rctoi(r - 1, c)])
+  }
+  // go down
+  if (r < nrows - 1) {
+    adjacentCells.push(cells[rctoi(r + 1, c)])
+  }
+  // go left
+  if (c > 0) {
+    adjacentCells.push(cells[rctoi(r, c - 1)])
+  }
+  // go right
+  if (c < ncols - 1) {
+    adjacentCells.push(cells[rctoi(r, c + 1)])
+  }
+  return adjacentCells
+}
+
+function cellIsError(cells: Cell[], cell: Cell): boolean {
+  if (![CellState.Shaded0, CellState.Shaded1, CellState.Shaded2, CellState.Shaded3, CellState.Shaded4].includes(cell.state)) {
+    return false
+  }
+  const adjacentCells = getAdjacentCells(cells, cell)
+  const numAdjacentLightbulbs = adjacentCells.filter(cell => cell.state === CellState.Lightbulb).length
+  const numRequiredAdjacentLightbulbs = cell.state - CellState.Shaded0
+  return numAdjacentLightbulbs > numRequiredAdjacentLightbulbs
+}
+
 export default function GameBoard() {
   const [cells, setCells] = useImmer(parsePuzzle(puzzle1))
 
@@ -184,6 +216,10 @@ export default function GameBoard() {
         } else {
           draftCells[cell.id].state = CellState.Lit
         }
+      })
+      // Check for errors
+      draftCells.forEach(cell => {
+        draftCells[cell.id].isError = cellIsError(draftCells, cell)
       })
     })
 
