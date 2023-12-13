@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useImmer } from "use-immer";
+import { Draft } from "immer";
 import "./styles.css";
 
 // States
@@ -61,13 +62,79 @@ const initialCells: Cell[] = [
   { id: 16, state: CellState.Empty },
 ]
 
+const puzzle1 = `
+....10.
+1......
+0.=.=..
+...=...
+..0.3.=
+......=
+.0=....`
+
+function parsePuzzle(puzzle: string) {
+  const lines = puzzle.trim().split("\n")
+  const cells = []
+  for (let y = 0; y < lines.length; y++) {
+    const line = lines[y]
+    for (let x = 0; x < line.length; x++) {
+      const char = line[x]
+      if (char === ".") {
+        cells.push({ id: x + y * line.length, state: CellState.Empty })
+      } else if (char === "=") {
+        cells.push({ id: x + y * line.length, state: CellState.Shaded })
+      } else if (char === "0") {
+        cells.push({ id: x + y * line.length, state: CellState.Shaded0 })
+      } else if (char === "1") {
+        cells.push({ id: x + y * line.length, state: CellState.Shaded1 })
+      } else if (char === "2") {
+        cells.push({ id: x + y * line.length, state: CellState.Shaded2 })
+      } else if (char === "3") {
+        cells.push({ id: x + y * line.length, state: CellState.Shaded3 })
+      } else if (char === "4") {
+        cells.push({ id: x + y * line.length, state: CellState.Shaded4 })
+      } else if (char === "X") {
+        cells.push({ id: x + y * line.length, state: CellState.Xed })
+      } else if (char === "L") {
+        cells.push({ id: x + y * line.length, state: CellState.Lightbulb })
+      } else if (char === "l") {
+        cells.push({ id: x + y * line.length, state: CellState.Lit })
+      }
+    }
+  }
+  return cells
+}
+
 export default function GameBoard() {
-  // const [cells, setCells] = useState([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
-  const [cells, setCells] = useState(initialCells)
+  const [cells, setCells] = useImmer(parsePuzzle(puzzle1))
 
   const handleClick = (cell: Cell) => {
+    let newState = cell.state
+    switch (cell.state) {
+      case CellState.Shaded:
+      case CellState.Shaded0:
+      case CellState.Shaded1:
+      case CellState.Shaded2:
+      case CellState.Shaded3:
+      case CellState.Shaded4:
+      case CellState.Lit:
+        return
+      case CellState.Empty:
+        newState = CellState.Lightbulb
+        break
+      case CellState.Lightbulb:
+          newState = CellState.Xed
+          break
+      case CellState.Xed:
+        newState = CellState.Empty
+        break
+    }
+    setCells((draft: Draft<Cell[]>) => {
+      draft[cell.id].state = newState
+    })
     console.log(`You clicked on ${cell.id}`)
   }
+
+  // console.log(parsePuzzle(puzzle1))
 
   return (
     <>
