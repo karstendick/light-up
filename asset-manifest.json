@@ -1,0 +1,21 @@
+{
+  "files": {
+    "main.css": "/light-up/static/css/main.fdec5860.css",
+    "main.js": "/light-up/static/js/main.a5137405.js",
+    "static/js/137.9619777a.js": "/light-up/static/js/137.9619777a.js",
+    "favicon.ico": "/light-up/favicon.ico",
+    "index.html": "/light-up/index.html",
+    "favicon-32.png": "/light-up/favicon-32.png",
+    "favicon-16.png": "/light-up/favicon-16.png",
+    "serve.json": "/light-up/serve.json",
+    "manifest.json": "/light-up/manifest.json",
+    "main.fdec5860.css.map": "/light-up/static/css/main.fdec5860.css.map",
+    "main.a5137405.js.map": "/light-up/static/js/main.a5137405.js.map",
+    "137.9619777a.js.map": "/light-up/static/js/137.9619777a.js.map"
+  },
+  "entrypoints": [
+    "static/js/137.9619777a.js",
+    "static/css/main.fdec5860.css",
+    "static/js/main.a5137405.js"
+  ]
+}

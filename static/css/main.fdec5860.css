@@ -1,0 +1,2 @@
+.board_grid{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(7,1fr)}.cell{border:1px solid #000;font-size:2em;padding:.5em;text-align:center}.cell:disabled{color:#000;opacity:1}.cell_error{background-color:red}
+/*# sourceMappingURL=main.fdec5860.css.map*/
