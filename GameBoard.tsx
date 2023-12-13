@@ -165,13 +165,16 @@ export default function GameBoard() {
           break
       }
       draftCells[clickedCell.id].state = newState
-      // todo: get lightbulb cells
+
+      // Unlight all lit cells
+      const prevLitCells = draftCells.filter(cell => cell.state === CellState.Lit)
+      prevLitCells.forEach(cell => draftCells[cell.id].state = CellState.Empty)
+      // Light all cells that are lit by lightbulbs
       const lightbulbCells = draftCells.filter(cell => cell.state === CellState.Lightbulb)
       console.log(lightbulbCells)
       const litCells = lightbulbCells.flatMap(cell => shineLight(cells, cell))
       console.log(litCells)
       litCells.forEach(cell => draftCells[cell.id].state = CellState.Lit)
-      // foreach of those, cast light rays to get indexes of cells that are lit
     })
 
   }
