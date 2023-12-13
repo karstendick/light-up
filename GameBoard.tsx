@@ -32,7 +32,7 @@ enum CellState {
   Xed,
   Lightbulb,
   Lit,
-  // LitXed,
+  LitXed,
 }
 
 const cellStateToContent = {
@@ -46,7 +46,7 @@ const cellStateToContent = {
   [CellState.Xed]: "❌",
   [CellState.Lightbulb]: "💡",
   [CellState.Lit]: "🟨",
-  // [CellState.LitXed]: "X",
+  [CellState.LitXed]: "❎",
 }
 
 type Cell = {
@@ -96,13 +96,14 @@ function parsePuzzle(puzzle: string) {
   return cells
 }
 
+const transparentStates = [ CellState.Empty, CellState.Xed, CellState.Lit, CellState.LitXed ]
 function shineLight(cells: Cell[], cell: Cell) {
   const [r, c] = itorc(cell.id)
   const litCells = []
   // go up
   for (let i = r - 1; i >= 0; i--) {
     const cell = cells[rctoi(i, c)]
-    if ([CellState.Empty, CellState.Xed, CellState.Lit].includes(cell.state)) {
+    if (transparentStates.includes(cell.state)) {
       litCells.push(cell)
     } else {
       break
@@ -111,7 +112,7 @@ function shineLight(cells: Cell[], cell: Cell) {
   // go down
   for (let i = r + 1; i < nrows; i++) {
     const cell = cells[rctoi(i, c)]
-    if ([CellState.Empty, CellState.Xed, CellState.Lit].includes(cell.state)) {
+    if (transparentStates.includes(cell.state)) {
       litCells.push(cell)
     } else {
       break
@@ -120,7 +121,7 @@ function shineLight(cells: Cell[], cell: Cell) {
   // go left
   for (let i = c - 1; i >= 0; i--) {
     const cell = cells[rctoi(r, i)]
-    if ([CellState.Empty, CellState.Xed, CellState.Lit].includes(cell.state)) {
+    if (transparentStates.includes(cell.state)) {
       litCells.push(cell)
     } else {
       break
@@ -129,7 +130,7 @@ function shineLight(cells: Cell[], cell: Cell) {
   // go right
   for (let i = c + 1; i < ncols; i++) {
     const cell = cells[rctoi(r, i)]
-    if ([CellState.Empty, CellState.Xed, CellState.Lit].includes(cell.state)) {
+    if (transparentStates.includes(cell.state)) {
       litCells.push(cell)
     } else {
       break
@@ -152,8 +153,10 @@ export default function GameBoard() {
         case CellState.Shaded2:
         case CellState.Shaded3:
         case CellState.Shaded4:
-        case CellState.Lit:
           return
+        case CellState.Lit:
+          newState = CellState.LitXed
+          break
         case CellState.Empty:
           newState = CellState.Lightbulb
           break
@@ -161,20 +164,27 @@ export default function GameBoard() {
             newState = CellState.Xed
             break
         case CellState.Xed:
+        case CellState.LitXed:
           newState = CellState.Empty
           break
       }
       draftCells[clickedCell.id].state = newState
 
-      // Unlight all lit cells
+      // Unlight all previously lit cells, since we may have just removed a lightbulb
       const prevLitCells = draftCells.filter(cell => cell.state === CellState.Lit)
       prevLitCells.forEach(cell => draftCells[cell.id].state = CellState.Empty)
-      // Light all cells that are lit by lightbulbs
+      const prevLitXedCells = draftCells.filter(cell => cell.state === CellState.LitXed)
+      prevLitXedCells.forEach(cell => draftCells[cell.id].state = CellState.Xed)
+      // Light all cells that are now lit by lightbulbs
       const lightbulbCells = draftCells.filter(cell => cell.state === CellState.Lightbulb)
-      console.log(lightbulbCells)
       const litCells = lightbulbCells.flatMap(cell => shineLight(cells, cell))
-      console.log(litCells)
-      litCells.forEach(cell => draftCells[cell.id].state = CellState.Lit)
+      litCells.forEach((cell) => {
+        if ([CellState.Xed, CellState.LitXed].includes(cell.state)) {
+          draftCells[cell.id].state = CellState.LitXed
+        } else {
+          draftCells[cell.id].state = CellState.Lit
+        }
+      })
     })
 
   }

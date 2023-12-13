@@ -7,7 +7,7 @@ export default function App() {
   return (
     <>
       <View style={main_style.container}>
-        <Text>Light Up</Text>
+        <Text>💡Light Up💡</Text>
         <StatusBar style="auto" />
         <GameBoard />
       </View>
