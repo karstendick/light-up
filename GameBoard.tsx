@@ -22,17 +22,17 @@ function rctoi(r: number, c: number): number {
 // lit up/yellow
 // lit up Xed: red X on yellow
 enum CellState {
-  Empty,
-  Shaded,
-  Shaded0,
-  Shaded1,
-  Shaded2,
-  Shaded3,
-  Shaded4,
-  Xed,
-  Lightbulb,
-  Lit,
-  LitXed,
+  Empty, // 0
+  Shaded, // 1
+  Shaded0, // 2
+  Shaded1, // 3
+  Shaded2, // 4
+  Shaded3, // 5
+  Shaded4, // 6
+  Xed, // 7
+  Lightbulb, // 8
+  Lit, // 9
+  LitXed, // 10
 }
 
 const cellStateToContent = {
@@ -144,7 +144,6 @@ export default function GameBoard() {
   // - All numbered cells have exactly that many lightbulbs adjacent to it
 
   const handleClick = (clickedCell: Cell) => {
-    // console.log(`You clicked on ${clickedCell.id}`)
     setCells((draftCells: Draft<Cell[]>) => {
       let newState = clickedCell.state
       switch (clickedCell.state) {
@@ -178,7 +177,7 @@ export default function GameBoard() {
       prevLitXedCells.forEach(cell => draftCells[cell.id].state = CellState.Xed)
       // Light all cells that are now lit by lightbulbs
       const lightbulbCells = draftCells.filter(cell => cell.state === CellState.Lightbulb)
-      const litCells = lightbulbCells.flatMap(cell => shineLight(cells, cell))
+      const litCells = lightbulbCells.flatMap(cell => shineLight(draftCells, cell))
       litCells.forEach((cell) => {
         if ([CellState.Xed, CellState.LitXed].includes(cell.state)) {
           draftCells[cell.id].state = CellState.LitXed
