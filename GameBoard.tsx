@@ -242,6 +242,7 @@ export default function GameBoard() {
           draftCells[cell.id].state = CellState.Lit
         }
       })
+
       // Check for errors
       draftCells.forEach(cell => {
         draftCells[cell.id].isError = cellIsError(draftCells, cell)
