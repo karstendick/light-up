@@ -1,5 +1,15 @@
+/* TODO: parameterize the number of rows/columns */
 .board_grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   grid-template-rows: repeat(7, 1fr);
 }
+
+.button_error {
+  background-color: #ff0000;
+}
+
+/* TODO:
+  - Pretty it all up
+  - Make it work on different screen sizes
+   */

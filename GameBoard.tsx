@@ -5,11 +5,11 @@ import "./styles.css";
 const nrows = 7;
 const ncols = 7;
 
-function itorc(i: number) {
+function itorc(i: number): [number, number] {
   return [Math.floor(i / ncols), i % ncols];
 }
 
-function rctoi(r: number, c: number) {
+function rctoi(r: number, c: number): number {
   return r * ncols + c;
 }
 
@@ -49,9 +49,20 @@ const cellStateToContent = {
   [CellState.LitXed]: "❎",
 }
 
+const charToCellState: Record<string, CellState> = {
+  ".": CellState.Empty,
+  "=": CellState.Shaded,
+  "0": CellState.Shaded0,
+  "1": CellState.Shaded1,
+  "2": CellState.Shaded2,
+  "3": CellState.Shaded3,
+  "4": CellState.Shaded4,
+}
+
 type Cell = {
   id: number
   state: CellState;
+  isError?: boolean;
 }
 
 const puzzle1 = `
@@ -63,42 +74,23 @@ const puzzle1 = `
 ......=
 .0=....`
 
-function parsePuzzle(puzzle: string) {
+function parsePuzzle(puzzle: string): Cell[] {
   const lines = puzzle.trim().split("\n")
   const cells = []
   for (let y = 0; y < lines.length; y++) {
     const line = lines[y]
     for (let x = 0; x < line.length; x++) {
       const char = line[x]
-      if (char === ".") {
-        cells.push({ id: x + y * line.length, state: CellState.Empty })
-      } else if (char === "=") {
-        cells.push({ id: x + y * line.length, state: CellState.Shaded })
-      } else if (char === "0") {
-        cells.push({ id: x + y * line.length, state: CellState.Shaded0 })
-      } else if (char === "1") {
-        cells.push({ id: x + y * line.length, state: CellState.Shaded1 })
-      } else if (char === "2") {
-        cells.push({ id: x + y * line.length, state: CellState.Shaded2 })
-      } else if (char === "3") {
-        cells.push({ id: x + y * line.length, state: CellState.Shaded3 })
-      } else if (char === "4") {
-        cells.push({ id: x + y * line.length, state: CellState.Shaded4 })
-      } else if (char === "X") {
-        cells.push({ id: x + y * line.length, state: CellState.Xed })
-      } else if (char === "L") {
-        cells.push({ id: x + y * line.length, state: CellState.Lightbulb })
-      } else if (char === "l") {
-        cells.push({ id: x + y * line.length, state: CellState.Lit })
-      }
+      const state = charToCellState[char]
+      cells.push({ id: x + y * line.length, state })
     }
   }
   return cells
 }
 
 const transparentStates = [ CellState.Empty, CellState.Xed, CellState.Lit, CellState.LitXed ]
-function shineLight(cells: Cell[], cell: Cell) {
-  const [r, c] = itorc(cell.id)
+function shineLight(cells: Cell[], lightbulbCell: Cell): Cell[] {
+  const [r, c] = itorc(lightbulbCell.id)
   const litCells = []
   // go up
   for (let i = r - 1; i >= 0; i--) {
@@ -142,8 +134,17 @@ function shineLight(cells: Cell[], cell: Cell) {
 export default function GameBoard() {
   const [cells, setCells] = useImmer(parsePuzzle(puzzle1))
 
+  // TODO: Check for errors:
+  // - A lightbulb can't shine on another lightbulb
+  // - A numbered cell must have exactly that many lightbulbs adjacent to it (but only show error on exceeding that number)
+
+  // TODO: Check for win condition:
+  // - All cells are lit
+  // - No errors
+  // - All numbered cells have exactly that many lightbulbs adjacent to it
+
   const handleClick = (clickedCell: Cell) => {
-    console.log(`You clicked on ${clickedCell.id}`)
+    // console.log(`You clicked on ${clickedCell.id}`)
     setCells((draftCells: Draft<Cell[]>) => {
       let newState = clickedCell.state
       switch (clickedCell.state) {
@@ -189,11 +190,11 @@ export default function GameBoard() {
 
   }
 
-
+  // TODO: Disable a button if the cell is shaded
   return (
     <>
       <div className='board_grid'>
-        {cells.map((cell, index) => (
+        {cells.map((cell) => (
           <button
             onClick={() => handleClick(cell)}
             key={cell.id}>{cellStateToContent[cell.state]}</button>
