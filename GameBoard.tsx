@@ -2,6 +2,17 @@ import { useImmer } from "use-immer";
 import { Draft } from "immer";
 import "./styles.css";
 
+const nrows = 7;
+const ncols = 7;
+
+function itorc(i: number) {
+  return [Math.floor(i / ncols), i % ncols];
+}
+
+function rctoi(r: number, c: number) {
+  return r * ncols + c;
+}
+
 // States
 // empty/white/unknown
 // shaded/black
@@ -42,25 +53,6 @@ type Cell = {
   id: number
   state: CellState;
 }
-
-const initialCells: Cell[] = [
-  { id: 1, state: CellState.Empty },
-  { id: 2, state: CellState.Shaded },
-  { id: 3, state: CellState.Shaded0 },
-  { id: 4, state: CellState.Shaded1 },
-  { id: 5, state: CellState.Shaded2 },
-  { id: 6, state: CellState.Shaded3 },
-  { id: 7, state: CellState.Shaded4 },
-  { id: 8, state: CellState.Xed },
-  { id: 9, state: CellState.Lightbulb },
-  { id: 10, state: CellState.Lit },
-  { id: 11, state: CellState.Empty },
-  { id: 12, state: CellState.Empty },
-  { id: 13, state: CellState.Empty },
-  { id: 14, state: CellState.Empty },
-  { id: 15, state: CellState.Empty },
-  { id: 16, state: CellState.Empty },
-]
 
 const puzzle1 = `
 ....10.
@@ -104,37 +96,86 @@ function parsePuzzle(puzzle: string) {
   return cells
 }
 
+function shineLight(cells: Cell[], cell: Cell) {
+  const [r, c] = itorc(cell.id)
+  const litCells = []
+  // go up
+  for (let i = r - 1; i >= 0; i--) {
+    const cell = cells[rctoi(i, c)]
+    if ([CellState.Empty, CellState.Xed, CellState.Lit].includes(cell.state)) {
+      litCells.push(cell)
+    } else {
+      break
+    }
+  }
+  // go down
+  for (let i = r + 1; i < nrows; i++) {
+    const cell = cells[rctoi(i, c)]
+    if ([CellState.Empty, CellState.Xed, CellState.Lit].includes(cell.state)) {
+      litCells.push(cell)
+    } else {
+      break
+    }
+  }
+  // go left
+  for (let i = c - 1; i >= 0; i--) {
+    const cell = cells[rctoi(r, i)]
+    if ([CellState.Empty, CellState.Xed, CellState.Lit].includes(cell.state)) {
+      litCells.push(cell)
+    } else {
+      break
+    }
+  }
+  // go right
+  for (let i = c + 1; i < ncols; i++) {
+    const cell = cells[rctoi(r, i)]
+    if ([CellState.Empty, CellState.Xed, CellState.Lit].includes(cell.state)) {
+      litCells.push(cell)
+    } else {
+      break
+    }
+  }
+  return litCells
+}
+
 export default function GameBoard() {
   const [cells, setCells] = useImmer(parsePuzzle(puzzle1))
 
-  const handleClick = (cell: Cell) => {
-    let newState = cell.state
-    switch (cell.state) {
-      case CellState.Shaded:
-      case CellState.Shaded0:
-      case CellState.Shaded1:
-      case CellState.Shaded2:
-      case CellState.Shaded3:
-      case CellState.Shaded4:
-      case CellState.Lit:
-        return
-      case CellState.Empty:
-        newState = CellState.Lightbulb
-        break
-      case CellState.Lightbulb:
-          newState = CellState.Xed
+  const handleClick = (clickedCell: Cell) => {
+    console.log(`You clicked on ${clickedCell.id}`)
+    setCells((draftCells: Draft<Cell[]>) => {
+      let newState = clickedCell.state
+      switch (clickedCell.state) {
+        case CellState.Shaded:
+        case CellState.Shaded0:
+        case CellState.Shaded1:
+        case CellState.Shaded2:
+        case CellState.Shaded3:
+        case CellState.Shaded4:
+        case CellState.Lit:
+          return
+        case CellState.Empty:
+          newState = CellState.Lightbulb
           break
-      case CellState.Xed:
-        newState = CellState.Empty
-        break
-    }
-    setCells((draft: Draft<Cell[]>) => {
-      draft[cell.id].state = newState
+        case CellState.Lightbulb:
+            newState = CellState.Xed
+            break
+        case CellState.Xed:
+          newState = CellState.Empty
+          break
+      }
+      draftCells[clickedCell.id].state = newState
+      // todo: get lightbulb cells
+      const lightbulbCells = draftCells.filter(cell => cell.state === CellState.Lightbulb)
+      console.log(lightbulbCells)
+      const litCells = lightbulbCells.flatMap(cell => shineLight(cells, cell))
+      console.log(litCells)
+      litCells.forEach(cell => draftCells[cell.id].state = CellState.Lit)
+      // foreach of those, cast light rays to get indexes of cells that are lit
     })
-    console.log(`You clicked on ${cell.id}`)
+
   }
 
-  // console.log(parsePuzzle(puzzle1))
 
   return (
     <>

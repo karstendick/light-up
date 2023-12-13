@@ -7,7 +7,7 @@ export default function App() {
   return (
     <>
       <View style={main_style.container}>
-        <Text>Open up App.tsx to start working on your app!</Text>
+        <Text>Light Up</Text>
         <StatusBar style="auto" />
         <GameBoard />
       </View>
