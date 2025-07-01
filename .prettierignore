@@ -1,0 +1,9 @@
+node_modules
+web-build
+.expo
+.expo-shared
+package-lock.json
+*.png
+*.jpg
+*.jpeg
+*.gif

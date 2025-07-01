@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
-import './styles.css'
+import './styles.css';
 import GameBoard from './GameBoard';
 
 export default function App() {
