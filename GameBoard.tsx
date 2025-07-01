@@ -1,7 +1,7 @@
 import React from 'react';
 import { useImmer } from 'use-immer';
 import { Draft } from 'immer';
-import { Text } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import './styles.css';
 
 // TODO: Handled different sized puzzles
@@ -290,12 +290,24 @@ export default function GameBoard() {
             className={'cell ' + (cell.isError ? 'cell_error' : '')}
             onClick={() => handleClick(cell)}
             key={cell.id}
+            aria-label={`Cell at row ${Math.floor(cell.id / ncols) + 1}, column ${(cell.id % ncols) + 1}`}
+            type="button"
           >
             {cellStateToContent[cell.state]}
           </button>
         ))}
       </div>
-      {isGameWon && <Text>You won!</Text>}
+      {isGameWon && <Text style={styles.winMessage}>🎉 You won! 🎉</Text>}
     </React.Fragment>
   );
 }
+
+const styles = StyleSheet.create({
+  winMessage: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 20,
+    textAlign: 'center',
+    color: '#4CAF50',
+  },
+});
