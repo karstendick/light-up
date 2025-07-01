@@ -48,7 +48,7 @@ export const puzzles: Record<Difficulty, PuzzleConfig> = {
 ...=...
 ..0.3.=
 ......=
-.=....1
+.=.....
 `,
   },
   expert: {
