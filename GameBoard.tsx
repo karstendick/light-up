@@ -50,21 +50,18 @@ export default function GameBoard() {
         cols: 5,
         blackCellDensity: 0.15,
         numberedCellRatio: 0.5,
-        symmetry: 'rotational',
       },
       intermediate: {
         rows: 7,
         cols: 7,
         blackCellDensity: 0.2,
         numberedCellRatio: 0.4,
-        symmetry: 'rotational',
       },
       expert: {
         rows: 9,
         cols: 9,
-        blackCellDensity: 0.25,
-        numberedCellRatio: 0.3,
-        symmetry: 'rotational',
+        blackCellDensity: 0.35,
+        numberedCellRatio: 0.6,
       },
     };
 

@@ -6,11 +6,14 @@ export interface GeneratorOptions {
   cols: number;
   blackCellDensity: number; // 0.0 to 1.0
   numberedCellRatio: number; // 0.0 to 1.0 - ratio of black cells that should be numbered
-  symmetry: 'none' | 'rotational' | 'horizontal' | 'vertical';
 }
 
-export function generatePuzzle(options: GeneratorOptions): PuzzleConfig | null {
+export function generatePuzzle(
+  options: GeneratorOptions,
+  timeoutMs: number = 5000
+): PuzzleConfig | null {
   const { rows, cols } = options;
+  const startTime = Date.now();
 
   // Step 1: Create empty board
   const board = createEmptyBoard(rows, cols);
@@ -19,16 +22,16 @@ export function generatePuzzle(options: GeneratorOptions): PuzzleConfig | null {
   placeBlackCells(board, options);
 
   // Step 3: Solve to find valid lightbulb positions
-  const solution = solvePuzzle(board, rows, cols);
+  const solution = solvePuzzle(board, rows, cols, startTime, timeoutMs);
   if (!solution) {
-    return null; // Unsolvable configuration
+    return null; // Unsolvable configuration or timeout
   }
 
   // Step 4: Add numbered constraints based on solution
   addNumberedConstraints(board, solution, options);
 
-  // Step 5: Verify puzzle has unique solution
-  if (!hasUniqueSolution(board, rows, cols)) {
+  // Step 5: Verify puzzle has unique solution (with timeout)
+  if (!hasUniqueSolution(board, rows, cols, startTime, timeoutMs)) {
     return null;
   }
 
@@ -51,7 +54,7 @@ function createEmptyBoard(rows: number, cols: number): Cell[] {
 }
 
 function placeBlackCells(board: Cell[], options: GeneratorOptions): void {
-  const { rows, cols, blackCellDensity, symmetry } = options;
+  const { rows, cols, blackCellDensity } = options;
   const totalCells = rows * cols;
   const targetBlackCells = Math.floor(totalCells * blackCellDensity);
 
@@ -67,49 +70,39 @@ function placeBlackCells(board: Cell[], options: GeneratorOptions): void {
     board[pos].state = CellState.Shaded;
     usedPositions.add(pos);
     placedCells++;
-
-    // Handle symmetry
-    if (symmetry !== 'none') {
-      const symmetricPos = getSymmetricPosition(pos, rows, cols, symmetry);
-      if (symmetricPos !== pos && !usedPositions.has(symmetricPos)) {
-        board[symmetricPos].state = CellState.Shaded;
-        usedPositions.add(symmetricPos);
-        placedCells++;
-      }
-    }
   }
 }
 
-function getSymmetricPosition(pos: number, rows: number, cols: number, symmetry: string): number {
-  const [row, col] = itorc(pos, cols);
-
-  switch (symmetry) {
-    case 'rotational':
-      // 180-degree rotation
-      return rctoi(rows - 1 - row, cols - 1 - col, cols);
-    case 'horizontal':
-      // Mirror across horizontal axis
-      return rctoi(row, cols - 1 - col, cols);
-    case 'vertical':
-      // Mirror across vertical axis
-      return rctoi(rows - 1 - row, col, cols);
-    default:
-      return pos;
-  }
-}
-
-function solvePuzzle(board: Cell[], rows: number, cols: number): Cell[] | null {
+function solvePuzzle(
+  board: Cell[],
+  rows: number,
+  cols: number,
+  startTime: number,
+  timeoutMs: number
+): Cell[] | null {
   const solution = board.map((cell) => ({ ...cell }));
 
-  // Implement backtracking solver
-  if (solveRecursive(solution, 0, rows, cols)) {
+  // Implement backtracking solver with timeout
+  if (solveRecursive(solution, 0, rows, cols, startTime, timeoutMs)) {
     return solution;
   }
 
   return null;
 }
 
-function solveRecursive(board: Cell[], index: number, rows: number, cols: number): boolean {
+function solveRecursive(
+  board: Cell[],
+  index: number,
+  rows: number,
+  cols: number,
+  startTime: number,
+  timeoutMs: number
+): boolean {
+  // Check timeout
+  if (Date.now() - startTime > timeoutMs) {
+    return false;
+  }
+
   // Find next empty cell
   while (index < board.length && board[index].state !== CellState.Empty) {
     index++;
@@ -131,7 +124,10 @@ function solveRecursive(board: Cell[], index: number, rows: number, cols: number
     }
   });
 
-  if (isValidPlacement(board, index, rows, cols) && solveRecursive(board, index + 1, rows, cols)) {
+  if (
+    isValidPlacement(board, index, rows, cols) &&
+    solveRecursive(board, index + 1, rows, cols, startTime, timeoutMs)
+  ) {
     return true;
   }
 
@@ -144,7 +140,7 @@ function solveRecursive(board: Cell[], index: number, rows: number, cols: number
   });
 
   // Try leaving cell empty
-  if (solveRecursive(board, index + 1, rows, cols)) {
+  if (solveRecursive(board, index + 1, rows, cols, startTime, timeoutMs)) {
     return true;
   }
 
@@ -273,7 +269,13 @@ function addNumberedConstraints(board: Cell[], solution: Cell[], options: Genera
   }
 }
 
-function hasUniqueSolution(board: Cell[], rows: number, cols: number): boolean {
+function hasUniqueSolution(
+  board: Cell[],
+  rows: number,
+  cols: number,
+  startTime: number,
+  timeoutMs: number
+): boolean {
   // Count number of solutions (stop at 2)
   const solutionCount = countSolutions(
     board.map((cell) => ({ ...cell })),
@@ -281,7 +283,9 @@ function hasUniqueSolution(board: Cell[], rows: number, cols: number): boolean {
     0,
     2,
     rows,
-    cols
+    cols,
+    startTime,
+    timeoutMs
   );
   return solutionCount === 1;
 }
@@ -292,9 +296,11 @@ function countSolutions(
   count: number,
   maxCount: number,
   rows: number,
-  cols: number
+  cols: number,
+  startTime: number,
+  timeoutMs: number
 ): number {
-  if (count >= maxCount) return count;
+  if (count >= maxCount || Date.now() - startTime > timeoutMs) return count;
 
   // Find next empty cell
   while (index < board.length && board[index].state !== CellState.Empty) {
@@ -317,7 +323,7 @@ function countSolutions(
   });
 
   if (isValidPlacement(board, index, rows, cols)) {
-    count = countSolutions(board, index + 1, count, maxCount, rows, cols);
+    count = countSolutions(board, index + 1, count, maxCount, rows, cols, startTime, timeoutMs);
   }
 
   // Backtrack
@@ -329,7 +335,7 @@ function countSolutions(
   });
 
   // Try leaving empty
-  count = countSolutions(board, index + 1, count, maxCount, rows, cols);
+  count = countSolutions(board, index + 1, count, maxCount, rows, cols, startTime, timeoutMs);
 
   return count;
 }
