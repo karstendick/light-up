@@ -1,3 +1,4 @@
+import React from 'react';
 import { useImmer } from 'use-immer';
 import { Draft } from 'immer';
 import { Text } from 'react-native';
@@ -281,7 +282,7 @@ export default function GameBoard() {
   };
 
   return (
-    <>
+    <React.Fragment>
       <div className="board_grid">
         {cells.map((cell) => (
           <button
@@ -295,6 +296,6 @@ export default function GameBoard() {
         ))}
       </div>
       {isGameWon && <Text>You won!</Text>}
-    </>
+    </React.Fragment>
   );
 }
