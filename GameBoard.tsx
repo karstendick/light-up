@@ -4,16 +4,13 @@ import { Draft } from 'immer';
 import { Text, StyleSheet, View } from 'react-native';
 import './styles.css';
 
-// TODO: Handled different sized puzzles
-const nrows = 7;
-const ncols = 7;
-
-function itorc(i: number): [number, number] {
-  return [Math.floor(i / ncols), i % ncols];
+// Grid utility functions
+function itorc(i: number, cols: number): [number, number] {
+  return [Math.floor(i / cols), i % cols];
 }
 
-function rctoi(r: number, c: number): number {
-  return r * ncols + c;
+function rctoi(r: number, c: number, cols: number): number {
+  return r * cols + c;
 }
 
 enum CellState {
@@ -62,36 +59,77 @@ type Cell = {
 
 type PlacementMode = 'lightbulb' | 'x';
 
-const puzzle1 = `
+type Difficulty = 'beginner' | 'intermediate' | 'expert';
+
+type PuzzleConfig = {
+  puzzle: string;
+  rows: number;
+  cols: number;
+};
+
+const puzzles: Record<Difficulty, PuzzleConfig> = {
+  beginner: {
+    rows: 5,
+    cols: 5,
+    puzzle: `
+..1..
+.....
+1.=.1
+.....
+..1..
+`,
+  },
+  intermediate: {
+    rows: 7,
+    cols: 7,
+    puzzle: `
 ....10.
 1......
 0.=.=..
 ...=...
 ..0.3.=
 ......=
-.0=....`;
+.=....1
+`,
+  },
+  expert: {
+    rows: 9,
+    cols: 9,
+    puzzle: `
+...2.1...
+.=.....=.
+....=....
+1.=...=.1
+.........
+2.=...=.0
+....=....
+.=.....=.
+...0.3...
+`,
+  },
+};
 
-function parsePuzzle(puzzle: string): Cell[] {
+function parsePuzzle(puzzle: string, rows: number, cols: number): Cell[] {
   const lines = puzzle.trim().split('\n');
   const cells = [];
-  for (let y = 0; y < lines.length; y++) {
+  for (let y = 0; y < rows; y++) {
     const line = lines[y];
-    for (let x = 0; x < line.length; x++) {
+    for (let x = 0; x < cols; x++) {
       const char = line[x];
       const state = charToCellState[char];
-      cells.push({ id: x + y * line.length, state });
+      cells.push({ id: x + y * cols, state });
     }
   }
   return cells;
 }
 
 const transparentStates = [CellState.Empty, CellState.Xed, CellState.Lit, CellState.LitXed];
-function shineLight(cells: Cell[], lightbulbCell: Cell): Cell[] {
-  const [r, c] = itorc(lightbulbCell.id);
+function shineLight(cells: Cell[], lightbulbCell: Cell, rows: number, cols: number): Cell[] {
+  const [r, c] = itorc(lightbulbCell.id, cols);
   const litCells = [];
   // go up
   for (let i = r - 1; i >= 0; i--) {
-    const cell = cells[rctoi(i, c)];
+    const cell = cells[rctoi(i, c, cols)];
     if (transparentStates.includes(cell.state)) {
       litCells.push(cell);
     } else {
@@ -99,8 +137,8 @@ function shineLight(cells: Cell[], lightbulbCell: Cell): Cell[] {
     }
   }
   // go down
-  for (let i = r + 1; i < nrows; i++) {
-    const cell = cells[rctoi(i, c)];
+  for (let i = r + 1; i < rows; i++) {
+    const cell = cells[rctoi(i, c, cols)];
     if (transparentStates.includes(cell.state)) {
       litCells.push(cell);
     } else {
@@ -109,7 +147,7 @@ function shineLight(cells: Cell[], lightbulbCell: Cell): Cell[] {
   }
   // go left
   for (let i = c - 1; i >= 0; i--) {
-    const cell = cells[rctoi(r, i)];
+    const cell = cells[rctoi(r, i, cols)];
     if (transparentStates.includes(cell.state)) {
       litCells.push(cell);
     } else {
@@ -117,8 +155,8 @@ function shineLight(cells: Cell[], lightbulbCell: Cell): Cell[] {
     }
   }
   // go right
-  for (let i = c + 1; i < ncols; i++) {
-    const cell = cells[rctoi(r, i)];
+  for (let i = c + 1; i < cols; i++) {
+    const cell = cells[rctoi(r, i, cols)];
     if (transparentStates.includes(cell.state)) {
       litCells.push(cell);
     } else {
@@ -128,24 +166,24 @@ function shineLight(cells: Cell[], lightbulbCell: Cell): Cell[] {
   return litCells;
 }
 
-function getAdjacentCells(cells: Cell[], cell: Cell): Cell[] {
-  const [r, c] = itorc(cell.id);
+function getAdjacentCells(cells: Cell[], cell: Cell, rows: number, cols: number): Cell[] {
+  const [r, c] = itorc(cell.id, cols);
   const adjacentCells = [];
   // go up
   if (r > 0) {
-    adjacentCells.push(cells[rctoi(r - 1, c)]);
+    adjacentCells.push(cells[rctoi(r - 1, c, cols)]);
   }
   // go down
-  if (r < nrows - 1) {
-    adjacentCells.push(cells[rctoi(r + 1, c)]);
+  if (r < rows - 1) {
+    adjacentCells.push(cells[rctoi(r + 1, c, cols)]);
   }
   // go left
   if (c > 0) {
-    adjacentCells.push(cells[rctoi(r, c - 1)]);
+    adjacentCells.push(cells[rctoi(r, c - 1, cols)]);
   }
   // go right
-  if (c < ncols - 1) {
-    adjacentCells.push(cells[rctoi(r, c + 1)]);
+  if (c < cols - 1) {
+    adjacentCells.push(cells[rctoi(r, c + 1, cols)]);
   }
   return adjacentCells;
 }
@@ -154,8 +192,13 @@ function getAdjacentCells(cells: Cell[], cell: Cell): Cell[] {
 // 0 means the correct number of lightbulbs are adjacent
 // >0 means there are too many lightbulbs adjacent, which is an error
 // <0 means there are too few lightbulbs adjacent, so continue playing
-function getNumAdjacentLightbulbsDiff(cells: Cell[], cell: Cell): number {
-  const adjacentCells = getAdjacentCells(cells, cell);
+function getNumAdjacentLightbulbsDiff(
+  cells: Cell[],
+  cell: Cell,
+  rows: number,
+  cols: number
+): number {
+  const adjacentCells = getAdjacentCells(cells, cell, rows, cols);
   const numAdjacentLightbulbs = adjacentCells.filter(
     (cell) => cell.state === CellState.Lightbulb
   ).length;
@@ -164,7 +207,7 @@ function getNumAdjacentLightbulbsDiff(cells: Cell[], cell: Cell): number {
   return numAdjacentLightbulbs - numRequiredAdjacentLightbulbs;
 }
 
-function cellIsError(cells: Cell[], cell: Cell): boolean {
+function cellIsError(cells: Cell[], cell: Cell, rows: number, cols: number): boolean {
   if (
     ![
       CellState.Shaded0,
@@ -176,11 +219,11 @@ function cellIsError(cells: Cell[], cell: Cell): boolean {
   ) {
     return false;
   }
-  const numAdjacentLightbulbsDiff = getNumAdjacentLightbulbsDiff(cells, cell);
+  const numAdjacentLightbulbsDiff = getNumAdjacentLightbulbsDiff(cells, cell, rows, cols);
   return numAdjacentLightbulbsDiff > 0;
 }
 
-function checkIsGameWon(cells: Cell[]): boolean {
+function checkIsGameWon(cells: Cell[], rows: number, cols: number): boolean {
   // Check that all cells are lit
   const disallowedStates = [CellState.Empty, CellState.Xed];
   const cellsWithDisallowedStates = cells.filter((cell) => disallowedStates.includes(cell.state));
@@ -198,7 +241,7 @@ function checkIsGameWon(cells: Cell[]): boolean {
     ].includes(cell.state)
   );
   const numAdjacentLightbulbsDiffs = numberedCells.map((cell) =>
-    getNumAdjacentLightbulbsDiff(cells, cell)
+    getNumAdjacentLightbulbsDiff(cells, cell, rows, cols)
   );
   if (numAdjacentLightbulbsDiffs.some((diff) => diff !== 0)) {
     return false;
@@ -208,9 +251,21 @@ function checkIsGameWon(cells: Cell[]): boolean {
 }
 
 export default function GameBoard() {
-  const [cells, setCells] = useImmer(parsePuzzle(puzzle1));
+  const [difficulty, setDifficulty] = useState<Difficulty>('intermediate');
+  const [currentPuzzle, setCurrentPuzzle] = useState(puzzles[difficulty]);
+  const [cells, setCells] = useImmer(
+    parsePuzzle(currentPuzzle.puzzle, currentPuzzle.rows, currentPuzzle.cols)
+  );
   const [isGameWon, setIsGameWon] = useImmer(false);
   const [placementMode, setPlacementMode] = useState<PlacementMode>('lightbulb');
+
+  const handleDifficultyChange = (newDifficulty: Difficulty) => {
+    const newPuzzle = puzzles[newDifficulty];
+    setDifficulty(newDifficulty);
+    setCurrentPuzzle(newPuzzle);
+    setCells(parsePuzzle(newPuzzle.puzzle, newPuzzle.rows, newPuzzle.cols));
+    setIsGameWon(false);
+  };
 
   function cellIsClickable(cell: Cell): boolean {
     if (isGameWon) {
@@ -291,7 +346,9 @@ export default function GameBoard() {
       prevLitXedCells.forEach((cell) => (draftCells[cell.id].state = CellState.Xed));
       // Light all cells that are now lit by lightbulbs
       const lightbulbCells = draftCells.filter((cell) => cell.state === CellState.Lightbulb);
-      const litCells = lightbulbCells.flatMap((cell) => shineLight(draftCells, cell));
+      const litCells = lightbulbCells.flatMap((cell) =>
+        shineLight(draftCells, cell, currentPuzzle.rows, currentPuzzle.cols)
+      );
       litCells.forEach((cell) => {
         if ([CellState.Xed, CellState.LitXed].includes(cell.state)) {
           draftCells[cell.id].state = CellState.LitXed;
@@ -302,24 +359,60 @@ export default function GameBoard() {
 
       // Check for errors
       draftCells.forEach((cell) => {
-        draftCells[cell.id].isError = cellIsError(draftCells, cell);
+        draftCells[cell.id].isError = cellIsError(
+          draftCells,
+          cell,
+          currentPuzzle.rows,
+          currentPuzzle.cols
+        );
       });
 
       // Check for win condition
-      setIsGameWon(checkIsGameWon(draftCells));
+      setIsGameWon(checkIsGameWon(draftCells, currentPuzzle.rows, currentPuzzle.cols));
     });
   };
 
   return (
     <React.Fragment>
-      <div className="board_grid">
+      {/* Difficulty selector */}
+      <View style={styles.difficultySelector}>
+        <Text style={styles.selectorLabel}>Difficulty:</Text>
+        <View style={styles.difficultyButtons}>
+          <button
+            className={`difficulty-button ${difficulty === 'beginner' ? 'active' : ''}`}
+            onClick={() => handleDifficultyChange('beginner')}
+            type="button"
+            aria-label="Beginner difficulty (5x5)"
+          >
+            Beginner
+          </button>
+          <button
+            className={`difficulty-button ${difficulty === 'intermediate' ? 'active' : ''}`}
+            onClick={() => handleDifficultyChange('intermediate')}
+            type="button"
+            aria-label="Intermediate difficulty (7x7)"
+          >
+            Intermediate
+          </button>
+          <button
+            className={`difficulty-button ${difficulty === 'expert' ? 'active' : ''}`}
+            onClick={() => handleDifficultyChange('expert')}
+            type="button"
+            aria-label="Expert difficulty (9x9)"
+          >
+            Expert
+          </button>
+        </View>
+      </View>
+
+      <div className="board_grid" data-size={currentPuzzle.rows}>
         {cells.map((cell) => (
           <button
             disabled={!cellIsClickable(cell)}
             className={'cell ' + (cell.isError ? 'cell_error' : '')}
             onClick={() => handleClick(cell)}
             key={cell.id}
-            aria-label={`Cell at row ${Math.floor(cell.id / ncols) + 1}, column ${(cell.id % ncols) + 1}`}
+            aria-label={`Cell at row ${Math.floor(cell.id / currentPuzzle.cols) + 1}, column ${(cell.id % currentPuzzle.cols) + 1}`}
             type="button"
           >
             {cellStateToContent[cell.state]}
@@ -358,6 +451,20 @@ const styles = StyleSheet.create({
     marginTop: 20,
     textAlign: 'center',
     color: '#4CAF50',
+  },
+  difficultySelector: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  selectorLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 10,
+    color: '#333',
+  },
+  difficultyButtons: {
+    flexDirection: 'row',
+    gap: 8,
   },
   modeSelector: {
     flexDirection: 'row',
