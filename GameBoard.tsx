@@ -16,6 +16,7 @@ import {
   cellIsError,
   checkIsGameWon,
 } from './gameUtils';
+import { generatePuzzle, GeneratorOptions } from './puzzleGenerator';
 
 // Import components
 import { DifficultySelector } from './components/DifficultySelector';
@@ -29,6 +30,7 @@ export default function GameBoard() {
   );
   const [isGameWon, setIsGameWon] = useImmer(false);
   const [placementMode, setPlacementMode] = useState<PlacementMode>('lightbulb');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleDifficultyChange = (newDifficulty: Difficulty) => {
     const newPuzzle = puzzles[newDifficulty];
@@ -36,6 +38,58 @@ export default function GameBoard() {
     setCurrentPuzzle(newPuzzle);
     setCells(parsePuzzle(newPuzzle.puzzle, newPuzzle.rows, newPuzzle.cols));
     setIsGameWon(false);
+  };
+
+  const handleGenerateNewPuzzle = () => {
+    setIsGenerating(true);
+
+    // Configure generation options based on difficulty
+    const difficultyConfig: Record<Difficulty, GeneratorOptions> = {
+      beginner: {
+        rows: 5,
+        cols: 5,
+        blackCellDensity: 0.15,
+        numberedCellRatio: 0.5,
+        symmetry: 'rotational',
+      },
+      intermediate: {
+        rows: 7,
+        cols: 7,
+        blackCellDensity: 0.2,
+        numberedCellRatio: 0.4,
+        symmetry: 'rotational',
+      },
+      expert: {
+        rows: 9,
+        cols: 9,
+        blackCellDensity: 0.25,
+        numberedCellRatio: 0.3,
+        symmetry: 'rotational',
+      },
+    };
+
+    const options = difficultyConfig[difficulty];
+
+    // Try to generate a valid puzzle (with timeout to prevent infinite loops)
+    setTimeout(() => {
+      let attempts = 0;
+      let newPuzzle = null;
+
+      while (attempts < 10 && !newPuzzle) {
+        newPuzzle = generatePuzzle(options);
+        attempts++;
+      }
+
+      if (newPuzzle) {
+        setCurrentPuzzle(newPuzzle);
+        setCells(parsePuzzle(newPuzzle.puzzle, newPuzzle.rows, newPuzzle.cols));
+        setIsGameWon(false);
+      } else {
+        alert('Failed to generate a valid puzzle. Please try again.');
+      }
+
+      setIsGenerating(false);
+    }, 100);
   };
 
   function cellIsClickable(cell: Cell): boolean {
@@ -147,6 +201,20 @@ export default function GameBoard() {
   return (
     <>
       <DifficultySelector difficulty={difficulty} onDifficultyChange={handleDifficultyChange} />
+
+      <button
+        onClick={handleGenerateNewPuzzle}
+        disabled={isGenerating}
+        style={{
+          marginTop: '10px',
+          marginBottom: '10px',
+          padding: '8px 16px',
+          fontSize: '16px',
+          cursor: isGenerating ? 'wait' : 'pointer',
+        }}
+      >
+        {isGenerating ? 'Generating...' : 'Generate New Puzzle'}
+      </button>
 
       <div className="board_grid" data-size={currentPuzzle.rows}>
         {cells.map((cell) => (
