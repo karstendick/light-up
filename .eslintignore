@@ -4,3 +4,4 @@ web-build
 .expo-shared
 babel.config.js
 .eslintrc.js
+webpack.config.js
