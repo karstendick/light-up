@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useImmer } from 'use-immer';
 import { Draft } from 'immer';
-import { Text, StyleSheet } from 'react-native';
+import { Text, StyleSheet, View } from 'react-native';
 import './styles.css';
 
 // TODO: Handled different sized puzzles
@@ -59,6 +59,8 @@ type Cell = {
   state: CellState;
   isError?: boolean;
 };
+
+type PlacementMode = 'lightbulb' | 'x';
 
 const puzzle1 = `
 ....10.
@@ -208,6 +210,7 @@ function checkIsGameWon(cells: Cell[]): boolean {
 export default function GameBoard() {
   const [cells, setCells] = useImmer(parsePuzzle(puzzle1));
   const [isGameWon, setIsGameWon] = useImmer(false);
+  const [placementMode, setPlacementMode] = useState<PlacementMode>('lightbulb');
 
   function cellIsClickable(cell: Cell): boolean {
     if (isGameWon) {
@@ -231,27 +234,53 @@ export default function GameBoard() {
   const handleClick = (clickedCell: Cell) => {
     setCells((draftCells: Draft<Cell[]>) => {
       let newState = clickedCell.state;
-      switch (clickedCell.state) {
-        case CellState.Shaded:
-        case CellState.Shaded0:
-        case CellState.Shaded1:
-        case CellState.Shaded2:
-        case CellState.Shaded3:
-        case CellState.Shaded4:
-          return;
-        case CellState.Lit:
-          newState = CellState.LitXed;
-          break;
-        case CellState.Empty:
-          newState = CellState.Lightbulb;
-          break;
-        case CellState.Lightbulb:
-          newState = CellState.Xed;
-          break;
-        case CellState.Xed:
-        case CellState.LitXed:
-          newState = CellState.Empty;
-          break;
+
+      // Handle click based on placement mode
+      if (placementMode === 'lightbulb') {
+        switch (clickedCell.state) {
+          case CellState.Shaded:
+          case CellState.Shaded0:
+          case CellState.Shaded1:
+          case CellState.Shaded2:
+          case CellState.Shaded3:
+          case CellState.Shaded4:
+            return;
+          case CellState.Empty:
+          case CellState.Lit:
+            newState = CellState.Lightbulb;
+            break;
+          case CellState.Lightbulb:
+            newState = CellState.Empty;
+            break;
+          case CellState.Xed:
+          case CellState.LitXed:
+            newState = CellState.Lightbulb;
+            break;
+        }
+      } else {
+        // placementMode === 'x'
+        switch (clickedCell.state) {
+          case CellState.Shaded:
+          case CellState.Shaded0:
+          case CellState.Shaded1:
+          case CellState.Shaded2:
+          case CellState.Shaded3:
+          case CellState.Shaded4:
+            return;
+          case CellState.Empty:
+            newState = CellState.Xed;
+            break;
+          case CellState.Lit:
+            newState = CellState.LitXed;
+            break;
+          case CellState.Xed:
+          case CellState.LitXed:
+            newState = CellState.Empty;
+            break;
+          case CellState.Lightbulb:
+            newState = CellState.Xed;
+            break;
+        }
       }
       draftCells[clickedCell.id].state = newState;
 
@@ -298,6 +327,26 @@ export default function GameBoard() {
         ))}
       </div>
       {isGameWon && <Text style={styles.winMessage}>🎉 You won! 🎉</Text>}
+
+      {/* Mode selector */}
+      <View style={styles.modeSelector}>
+        <button
+          className={`mode-button ${placementMode === 'lightbulb' ? 'active' : ''}`}
+          onClick={() => setPlacementMode('lightbulb')}
+          type="button"
+          aria-label="Place light bulbs"
+        >
+          💡 Light
+        </button>
+        <button
+          className={`mode-button ${placementMode === 'x' ? 'active' : ''}`}
+          onClick={() => setPlacementMode('x')}
+          type="button"
+          aria-label="Place X marks"
+        >
+          ❌ Mark
+        </button>
+      </View>
     </React.Fragment>
   );
 }
@@ -309,5 +358,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     textAlign: 'center',
     color: '#4CAF50',
+  },
+  modeSelector: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 20,
+    gap: 10,
   },
 });
