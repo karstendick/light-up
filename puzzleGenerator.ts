@@ -124,6 +124,13 @@ function solveRecursive(board: Cell[], index: number, rows: number, cols: number
   board[index].state = CellState.Lightbulb;
   const litCells = shineLight(board, board[index], rows, cols);
 
+  // Actually mark the cells as lit
+  litCells.forEach((cell) => {
+    if (board[cell.id].state === CellState.Empty) {
+      board[cell.id].state = CellState.Lit;
+    }
+  });
+
   if (isValidPlacement(board, index, rows, cols) && solveRecursive(board, index + 1, rows, cols)) {
     return true;
   }
@@ -301,6 +308,13 @@ function countSolutions(
   // Try placing lightbulb
   board[index].state = CellState.Lightbulb;
   const litCells = shineLight(board, board[index], rows, cols);
+
+  // Actually mark the cells as lit
+  litCells.forEach((cell) => {
+    if (board[cell.id].state === CellState.Empty) {
+      board[cell.id].state = CellState.Lit;
+    }
+  });
 
   if (isValidPlacement(board, index, rows, cols)) {
     count = countSolutions(board, index + 1, count, maxCount, rows, cols);
