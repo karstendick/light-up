@@ -1,25 +1,28 @@
 import { Cell, CellState, PuzzleConfig } from './types';
 import { itorc, rctoi, shineLight, cellIsError } from './gameUtils';
+import seedrandom from 'seedrandom';
 
 export interface GeneratorOptions {
   rows: number;
   cols: number;
   blackCellDensity: number; // 0.0 to 1.0
   numberedCellRatio: number; // 0.0 to 1.0 - ratio of black cells that should be numbered
+  seed?: number; // Optional seed for reproducible generation
 }
 
 export function generatePuzzle(
   options: GeneratorOptions,
   timeoutMs: number = 5000
 ): PuzzleConfig | null {
-  const { rows, cols } = options;
+  const { rows, cols, seed } = options;
   const startTime = Date.now();
+  const rng = seed !== undefined ? seedrandom(seed.toString()) : Math.random;
 
   // Step 1: Create empty board
   const board = createEmptyBoard(rows, cols);
 
-  // Step 2: Place black cells with symmetry
-  placeBlackCells(board, options);
+  // Step 2: Place black cells
+  placeBlackCells(board, options, rng);
 
   // Step 3: Solve to find valid lightbulb positions
   const solution = solvePuzzle(board, rows, cols, startTime, timeoutMs);
@@ -28,7 +31,7 @@ export function generatePuzzle(
   }
 
   // Step 4: Add numbered constraints based on solution
-  addNumberedConstraints(board, solution, options);
+  addNumberedConstraints(board, solution, options, rng);
 
   // Step 5: Verify puzzle has unique solution (with timeout)
   if (!hasUniqueSolution(board, rows, cols, startTime, timeoutMs)) {
@@ -53,7 +56,7 @@ function createEmptyBoard(rows: number, cols: number): Cell[] {
   return cells;
 }
 
-function placeBlackCells(board: Cell[], options: GeneratorOptions): void {
+function placeBlackCells(board: Cell[], options: GeneratorOptions, rng: () => number): void {
   const { rows, cols, blackCellDensity } = options;
   const totalCells = rows * cols;
   const targetBlackCells = Math.floor(totalCells * blackCellDensity);
@@ -62,7 +65,7 @@ function placeBlackCells(board: Cell[], options: GeneratorOptions): void {
   const usedPositions = new Set<number>();
 
   while (placedCells < targetBlackCells) {
-    const pos = Math.floor(Math.random() * totalCells);
+    const pos = Math.floor(rng() * totalCells);
 
     if (usedPositions.has(pos)) continue;
 
@@ -245,7 +248,12 @@ function countAdjacentLightbulbs(board: Cell[], pos: number, rows: number, cols:
   return count;
 }
 
-function addNumberedConstraints(board: Cell[], solution: Cell[], options: GeneratorOptions): void {
+function addNumberedConstraints(
+  board: Cell[],
+  solution: Cell[],
+  options: GeneratorOptions,
+  rng: () => number
+): void {
   const { numberedCellRatio, rows, cols } = options;
 
   // Find all black cells
@@ -258,7 +266,7 @@ function addNumberedConstraints(board: Cell[], solution: Cell[], options: Genera
 
   // Randomly select which black cells to number
   const numToAdd = Math.floor(blackCells.length * numberedCellRatio);
-  const shuffled = [...blackCells].sort(() => Math.random() - 0.5);
+  const shuffled = [...blackCells].sort(() => rng() - 0.5);
 
   for (let i = 0; i < numToAdd && i < shuffled.length; i++) {
     const pos = shuffled[i];
