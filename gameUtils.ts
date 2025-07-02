@@ -1,5 +1,13 @@
 import { CellState, Cell, Difficulty, PuzzleConfig } from './types';
 
+// Direction vectors for up, down, left, right
+export const DIRECTIONS = [
+  [-1, 0], // up
+  [1, 0], // down
+  [0, -1], // left
+  [0, 1], // right
+] as const;
+
 // Cell state mapping
 export const cellStateToContent = {
   [CellState.Empty]: '⬜️',
@@ -97,64 +105,42 @@ const transparentStates = [CellState.Empty, CellState.Xed, CellState.Lit, CellSt
 export function shineLight(cells: Cell[], lightbulbCell: Cell, rows: number, cols: number): Cell[] {
   const [r, c] = itorc(lightbulbCell.id, cols);
   const litCells = [];
-  // go up
-  for (let i = r - 1; i >= 0; i--) {
-    const cell = cells[rctoi(i, c, cols)];
-    if (transparentStates.includes(cell.state)) {
-      litCells.push(cell);
-    } else {
-      break;
+
+  // Shine light in all four directions
+  for (const [dr, dc] of DIRECTIONS) {
+    let currentR = r + dr;
+    let currentC = c + dc;
+
+    // Continue in this direction until hitting a wall or non-transparent cell
+    while (currentR >= 0 && currentR < rows && currentC >= 0 && currentC < cols) {
+      const cell = cells[rctoi(currentR, currentC, cols)];
+
+      if (transparentStates.includes(cell.state)) {
+        litCells.push(cell);
+        currentR += dr;
+        currentC += dc;
+      } else {
+        break;
+      }
     }
   }
-  // go down
-  for (let i = r + 1; i < rows; i++) {
-    const cell = cells[rctoi(i, c, cols)];
-    if (transparentStates.includes(cell.state)) {
-      litCells.push(cell);
-    } else {
-      break;
-    }
-  }
-  // go left
-  for (let i = c - 1; i >= 0; i--) {
-    const cell = cells[rctoi(r, i, cols)];
-    if (transparentStates.includes(cell.state)) {
-      litCells.push(cell);
-    } else {
-      break;
-    }
-  }
-  // go right
-  for (let i = c + 1; i < cols; i++) {
-    const cell = cells[rctoi(r, i, cols)];
-    if (transparentStates.includes(cell.state)) {
-      litCells.push(cell);
-    } else {
-      break;
-    }
-  }
+
   return litCells;
 }
 
 export function getAdjacentCells(cells: Cell[], cell: Cell, rows: number, cols: number): Cell[] {
   const [r, c] = itorc(cell.id, cols);
   const adjacentCells = [];
-  // go up
-  if (r > 0) {
-    adjacentCells.push(cells[rctoi(r - 1, c, cols)]);
+
+  for (const [dr, dc] of DIRECTIONS) {
+    const newR = r + dr;
+    const newC = c + dc;
+
+    if (newR >= 0 && newR < rows && newC >= 0 && newC < cols) {
+      adjacentCells.push(cells[rctoi(newR, newC, cols)]);
+    }
   }
-  // go down
-  if (r < rows - 1) {
-    adjacentCells.push(cells[rctoi(r + 1, c, cols)]);
-  }
-  // go left
-  if (c > 0) {
-    adjacentCells.push(cells[rctoi(r, c - 1, cols)]);
-  }
-  // go right
-  if (c < cols - 1) {
-    adjacentCells.push(cells[rctoi(r, c + 1, cols)]);
-  }
+
   return adjacentCells;
 }
 

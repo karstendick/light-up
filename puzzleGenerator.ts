@@ -1,5 +1,5 @@
 import { Cell, CellState, PuzzleConfig } from './types';
-import { itorc, rctoi, shineLight, cellIsError } from './gameUtils';
+import { itorc, rctoi, shineLight, cellIsError, DIRECTIONS } from './gameUtils';
 import seedrandom from 'seedrandom';
 
 export interface GeneratorOptions {
@@ -159,14 +159,7 @@ function isValidPlacement(
   const [row, col] = itorc(lightbulbPos, cols);
 
   // Check if lightbulb lights up another lightbulb
-  const directions = [
-    [-1, 0],
-    [1, 0],
-    [0, -1],
-    [0, 1],
-  ];
-
-  for (const [dr, dc] of directions) {
+  for (const [dr, dc] of DIRECTIONS) {
     let r = row + dr;
     let c = col + dc;
 
@@ -225,15 +218,9 @@ function isValidSolution(board: Cell[], rows: number, cols: number): boolean {
 
 function countAdjacentLightbulbs(board: Cell[], pos: number, rows: number, cols: number): number {
   const [row, col] = itorc(pos, cols);
-  const directions = [
-    [-1, 0],
-    [1, 0],
-    [0, -1],
-    [0, 1],
-  ];
 
   let count = 0;
-  for (const [dr, dc] of directions) {
+  for (const [dr, dc] of DIRECTIONS) {
     const r = row + dr;
     const c = col + dc;
 
